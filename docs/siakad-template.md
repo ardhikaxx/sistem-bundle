@@ -81,7 +81,7 @@ Termasuk `tests/Feature/RouteRenderSmokeTest.php` yang me-*crawl* seluruh route 
 
 Jika proyek SIAKAD ini bermanfaat bagi Anda dan telah menghemat banyak jam kerja Anda, Anda dapat menunjukkan apresiasi dengan memberikan traktiran kopi (donasi) melalui pemindaian kode QRIS di bawah ini:
 
-<img src="./qris.png" alt="QRIS Donasi" width="300"/>
+<img src="/qris/siakad.png" alt="QRIS Donasi" width="300"/>
 
 ## 📄 License
 

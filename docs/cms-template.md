@@ -124,7 +124,7 @@ Gunakan pola *Conventional Commits*:
 
 Jika proyek CMS ini bermanfaat bagi Anda dan telah menghemat banyak jam kerja Anda, Anda dapat menunjukkan apresiasi dengan memberikan traktiran kopi (donasi) melalui pemindaian kode QRIS di bawah ini:
 
-<img src="./qris.png" alt="QRIS Donasi" width="300"/>
+<img src="/qris/cms.png" alt="QRIS Donasi" width="300"/>
 
 ---
 Copyright (c) 2026 **Yanuar Ardhika Rahmadhani Ubaidillah**

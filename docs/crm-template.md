@@ -127,7 +127,7 @@ Jika menemukan celah keamanan, ikuti prosedur pelaporan di [SECURITY.md](SECURIT
 
 Jika proyek CRM ini bermanfaat bagi Anda dan telah menghemat banyak jam kerja Anda, Anda dapat menunjukkan apresiasi dengan memberikan traktiran kopi (donasi) melalui pemindaian kode QRIS di bawah ini:
 
-<img src="./qris.png" alt="QRIS Donasi" width="300"/>
+<img src="/qris/crm.png" alt="QRIS Donasi" width="300"/>
 
 ## 📄 License
 

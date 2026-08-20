@@ -1,0 +1,36 @@
+---
+import { bundle } from '../data/projects';
+---
+
+<section class="border-b border-neutral-900">
+	<div class="mx-auto max-w-5xl px-6 py-20 text-center">
+		<p class="font-mono text-xs uppercase tracking-[0.3em] text-neutral-500">Laravel 13 · Monochrome Bundle</p>
+		<h1 class="mt-6 text-4xl font-black tracking-tight sm:text-6xl">
+			Bundle <span class="underline decoration-neutral-400 underline-offset-8">5 Sistem Web</span>
+			<br />
+			Laravel 13 Siap Pakai
+		</h1>
+		<p class="mx-auto mt-6 max-w-2xl text-base text-neutral-600 sm:text-lg">
+			SIAKAD, CRM, CMS, WMS, dan ERP — lengkap dengan RBAC, dashboard per peran, dan dokumentasi instalasi.
+			Cukup satu paket, lima sistem siap dikembangkan.
+		</p>
+		<div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+			<span class="border border-neutral-900 px-5 py-2 font-mono text-xl font-bold">{bundle.price}</span>
+			<span class="font-mono text-xs text-neutral-500">{bundle.priceLabel}</span>
+		</div>
+		<div class="mt-10 flex flex-wrap justify-center gap-4">
+			<a
+				href="#produk"
+				class="border border-neutral-900 bg-neutral-900 px-6 py-3 font-mono text-sm text-white transition hover:bg-neutral-700"
+			>
+				Lihat Produk ↓
+			</a>
+			<a
+				href="#donasi"
+				class="border border-neutral-900 px-6 py-3 font-mono text-sm transition hover:bg-neutral-100"
+			>
+				Dukung Pengembang
+			</a>
+		</div>
+	</div>
+</section>

@@ -1,0 +1,27 @@
+---
+import { author, projects } from '../data/projects';
+import ProductCard from './ProductCard.astro';
+---
+
+<section id="produk" class="border-b border-neutral-900">
+	<div class="mx-auto max-w-5xl px-6 py-20">
+		<div class="mb-12 text-center">
+			<p class="font-mono text-xs uppercase tracking-[0.3em] text-neutral-500">Produk</p>
+			<h2 class="mt-4 text-3xl font-black tracking-tight sm:text-4xl">Lima Sistem dalam Satu Paket</h2>
+			<p class="mx-auto mt-4 max-w-xl text-sm text-neutral-600">
+				Setiap sistem siap pakai dengan akun demo. Klik kartu untuk melihat dokumentasi lengkap.
+			</p>
+		</div>
+
+		<div class="grid gap-6 md:grid-cols-2">
+			{
+				projects.slice(0, 4).map((project) => <ProductCard project={project} />)
+			}
+			<div class="flex justify-center md:col-span-2">
+				<div class="w-full max-w-md">
+					<ProductCard project={projects[4]} />
+				</div>
+			</div>
+		</div>
+	</div>
+</section>

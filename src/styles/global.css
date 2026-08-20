@@ -1,0 +1,12 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@layer base {
+	html {
+		scroll-behavior: smooth;
+	}
+
+	body {
+		@apply bg-white text-neutral-900 antialiased;
+	}
+}

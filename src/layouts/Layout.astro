@@ -1,0 +1,27 @@
+---
+import '../styles/global.css';
+import { author } from '../data/projects';
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const { title = 'Bundle 5 Sistem Web Laravel 13', description = 'Lima sistem web siap pakai berbasis Laravel 13 — SIAKAD, CRM, CMS, WMS, dan ERP dalam satu paket.' } =
+	Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="id">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="description" content={description} />
+		<meta name="author" content={author.name} />
+		<title>{title}</title>
+	</head>
+	<body class="bg-white text-neutral-900">
+		<slot />
+	</body>
+</html>

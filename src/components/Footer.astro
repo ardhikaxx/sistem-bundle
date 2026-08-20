@@ -1,0 +1,26 @@
+---
+import { author, bundle } from '../data/projects';
+---
+
+<footer class="bg-neutral-900 text-white">
+	<div class="mx-auto max-w-5xl px-6 py-10">
+		<div class="flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
+			<div>
+				<p class="font-mono text-sm font-bold">{bundle.name}</p>
+				<p class="mt-1 text-xs text-neutral-400">Laravel 13 · Bootstrap 5 · Monochrome</p>
+			</div>
+			<div class="flex flex-wrap items-center justify-center gap-4 font-mono text-xs text-neutral-400">
+				<a href="/docs/siakad-template" class="transition hover:text-white">SIAKAD</a>
+				<a href="/docs/crm-template" class="transition hover:text-white">CRM</a>
+				<a href="/docs/cms-template" class="transition hover:text-white">CMS</a>
+				<a href="/docs/wms-template" class="transition hover:text-white">WMS</a>
+				<a href="/docs/erp-template" class="transition hover:text-white">ERP</a>
+			</div>
+		</div>
+		<div class="mt-8 border-t border-neutral-700 pt-6 text-center">
+			<p class="font-mono text-xs text-neutral-400">
+				© 2026 {author.name} · Hak cipta & kepemilikan tetap milik pengembang
+			</p>
+		</div>
+	</div>
+</footer>

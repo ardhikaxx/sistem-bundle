@@ -58,6 +58,7 @@ export const author = {
 
 export const bundle = {
 	name: 'Bundle 5 Sistem Web Laravel 13',
-	price: 'Rp75.000',
+	price: 'Rp49.000',
+	priceOriginal: 'Rp250.000',
 	priceLabel: 'untuk 5 sistem lengkap',
 };

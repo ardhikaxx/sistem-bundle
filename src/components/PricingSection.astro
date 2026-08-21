@@ -1,0 +1,363 @@
+---
+import { bundle, projects } from '../data/projects';
+
+const WHATSAPP_NUMBER = '6285933648537';
+const QRIS_PAYLOAD = '00020101021126610014COM.GO-JEK.WWW01189360091438465549940210G8465549940303UMI51440014ID.CO.QRIS.WWW0215ID10264739285820303UMI5204899953033605802ID5925Yanuar Ardhika ID, Digita6009BONDOWOSO61056828162070703A01';
+const AMOUNT = '49000';
+---
+
+<script is:inline type="application/json" id="payment-config">
+{"payload":"00020101021126610014COM.GO-JEK.WWW01189360091438465549940210G8465549940303UMI51440014ID.CO.QRIS.WWW0215ID10264739285820303UMI5204899953033605802ID5925Yanuar Ardhika ID, Digita6009BONDOWOSO61056828162070703A01","amount":"49000","wa":"6285933648537"}
+</script>
+
+<section id="harga" class="border-b border-neutral-900">
+	<div class="mx-auto max-w-5xl px-6 py-20">
+		<div class="mb-12 text-center">
+			<p class="font-mono text-xs uppercase tracking-[0.3em] text-neutral-500">Harga Spesial</p>
+			<h2 class="mt-4 text-3xl font-black tracking-tight sm:text-4xl">Satu Paket, Lima Sistem</h2>
+		</div>
+
+		<div class="mx-auto max-w-3xl border border-neutral-900">
+			<!-- Mobile: stacked, Desktop: side by side -->
+			<div class="grid md:grid-cols-2">
+				<!-- Left: Harga -->
+				<div class="flex flex-col items-center justify-center border-b border-neutral-900 p-8 md:border-b-0 md:border-r md:border-neutral-900">
+					<p class="font-mono text-xs uppercase tracking-[0.3em] text-neutral-500">Bundle Lengkap</p>
+					<span class="mt-4 text-lg text-neutral-400 line-through">{bundle.priceOriginal}</span>
+					<div class="mt-1 text-5xl font-black tracking-tight">{bundle.price}</div>
+					<p class="mt-2 font-mono text-xs text-neutral-500">{bundle.priceLabel}</p>
+				</div>
+
+				<!-- Right: List Sistem + Tombol -->
+				<div class="flex flex-col p-8">
+					<p class="font-mono text-xs uppercase tracking-[0.3em] text-neutral-500">Yang Anda Dapatkan</p>
+					<div class="mt-4 flex-1 space-y-3">
+						{projects.map((p) => (
+							<div class="flex items-start gap-3">
+								<span class="mt-0.5 font-mono text-sm text-neutral-900">✓</span>
+								<div>
+									<span class="font-mono text-sm font-bold">{p.name}</span>
+									<span class="ml-2 text-xs text-neutral-500">— {p.short}</span>
+								</div>
+							</div>
+						))}
+					</div>
+
+					<button
+						id="btn-beli"
+						class="mt-8 w-full border border-neutral-900 bg-neutral-900 px-6 py-3 font-mono text-sm font-bold text-white transition hover:bg-neutral-700"
+					>
+						Beli Sekarang
+					</button>
+
+					<p class="mt-3 font-mono text-[10px] uppercase tracking-wider text-neutral-400 text-center">
+						Pembayaran via QRIS · File dikirim via WhatsApp
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- Modal Form -->
+<div id="modal-form" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+	<div class="w-full max-w-md border border-neutral-900 bg-white p-8">
+		<div class="flex items-center justify-between">
+			<h3 class="text-xl font-black tracking-tight">Data Pembeli</h3>
+			<button id="close-form" class="text-2xl leading-none text-neutral-400 hover:text-neutral-900">&times;</button>
+		</div>
+
+		<form id="form-beli" class="mt-6 space-y-4">
+			<div>
+				<label for="input-nama" class="mb-1 block font-mono text-xs font-semibold uppercase tracking-wider text-neutral-500">
+					Nama Lengkap
+				</label>
+				<input
+					id="input-nama"
+					type="text"
+					required
+					minlength="2"
+					placeholder="Masukkan nama Anda"
+					class="w-full border border-neutral-300 px-4 py-2.5 font-mono text-sm outline-none transition focus:border-neutral-900"
+				/>
+			</div>
+			<div>
+				<label for="input-wa" class="mb-1 block font-mono text-xs font-semibold uppercase tracking-wider text-neutral-500">
+					Nomor WhatsApp
+				</label>
+				<input
+					id="input-wa"
+					type="tel"
+					required
+					pattern="(08|\+628)\d{8,13}"
+					placeholder="08xxxxxxxxxx"
+					class="w-full border border-neutral-300 px-4 py-2.5 font-mono text-sm outline-none transition focus:border-neutral-900"
+				/>
+				<p class="mt-1 font-mono text-[10px] text-neutral-400">Contoh: 081234567890 atau +6281234567890</p>
+			</div>
+			<button
+				type="submit"
+				class="w-full border border-neutral-900 bg-neutral-900 px-6 py-3 font-mono text-sm font-bold text-white transition hover:bg-neutral-700"
+			>
+				Lanjut ke Pembayaran →
+			</button>
+		</form>
+	</div>
+</div>
+
+<!-- Modal QRIS -->
+<div id="modal-qris" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+	<div class="w-full max-w-md border border-neutral-900 bg-white p-8 text-center">
+		<div class="flex items-center justify-between">
+			<h3 class="text-xl font-black tracking-tight">Pembayaran QRIS</h3>
+			<button id="close-qris" class="text-2xl leading-none text-neutral-400 hover:text-neutral-900">&times;</button>
+		</div>
+
+		<div class="mt-6">
+			<p class="font-mono text-xs uppercase tracking-wider text-neutral-500">Scan QRIS ini</p>
+			<p class="mt-1 font-mono text-2xl font-black">{bundle.price}</p>
+		</div>
+
+		<div class="mt-6 flex justify-center">
+			<canvas id="qris-canvas" class="border border-neutral-200"></canvas>
+		</div>
+
+		<p class="mt-4 text-xs text-neutral-500">
+			Buka aplikasi banking/e-wallet → Scan → Masukkan nominal <strong>{bundle.price}</strong> jika tidak otomatis
+		</p>
+
+		<!-- Timer -->
+		<div class="mt-6">
+			<div class="mx-auto h-1.5 w-full max-w-xs overflow-hidden bg-neutral-100">
+				<div id="timer-bar" class="h-full bg-neutral-900 transition-all duration-1000 ease-linear" style="width:100%"></div>
+			</div>
+			<p class="mt-2 font-mono text-sm text-neutral-500">
+				Sisa waktu: <span id="timer-text" class="font-bold text-neutral-900">1:00</span>
+			</p>
+		</div>
+
+		<button
+			id="btn-wa"
+			class="mt-6 w-full border border-neutral-900 bg-neutral-900 px-6 py-3 font-mono text-sm font-bold text-white transition hover:bg-neutral-700"
+		>
+			Kirim Bukti ke WhatsApp →
+		</button>
+
+		<p class="mt-3 font-mono text-[10px] text-neutral-400">
+			Klik tombol di atas setelah melakukan pembayaran untuk mengirim bukti ke WhatsApp
+		</p>
+	</div>
+</div>
+
+<script is:inline>
+(function () {
+	var config = document.getElementById('payment-config');
+	var QRIS_PAYLOAD = config.dataset.payload;
+	var AMOUNT = config.dataset.amount;
+	var WHATSAPP_NUMBER = config.dataset.wa;
+
+	// --- CRC-16 CCITT (ISO/IEC 13239) ---
+	function crc16(str) {
+		let crc = 0xffff;
+		for (let i = 0; i < str.length; i++) {
+			crc ^= str.charCodeAt(i) << 8;
+			for (let j = 0; j < 8; j++) {
+				crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
+				crc &= 0xffff;
+			}
+		}
+		return crc;
+	}
+
+	// --- Build TLV ---
+	function tlv(tag, value) {
+		const len = String(value.length).padStart(2, '0');
+		return tag + len + value;
+	}
+
+	// --- Generate dynamic QRIS payload with amount ---
+	function generateQRISPayload(amount) {
+		// Base payload is everything before CRC (tag 63)
+		var base = QRIS_PAYLOAD;
+
+		// Change Tag 01 (Point of Initiation Method) from 010211 (static) to 010212 (dynamic)
+		base = base.replace('010211', '010212');
+
+		// Tag 53 (Currency Code) = "360" (IDR), Tag 53 length = 3
+		// We insert Tag 54 (Transaction Amount) after Tag 53
+		var tag53Str = '5303360';
+		var idx = base.indexOf(tag53Str) + tag53Str.length;
+		var before = base.substring(0, idx);
+		var after = base.substring(idx);
+
+		var amountTLV = tlv('54', amount);
+		var payloadWithoutCRC = before + amountTLV + after;
+
+		// CRC-16 CCITT: calculated over payload + '6304' (tag+length), but NOT the CRC value itself
+		var crcVal = crc16(payloadWithoutCRC + '6304');
+		var crcHex = crcVal.toString(16).toUpperCase().padStart(4, '0');
+
+		return payloadWithoutCRC + '6304' + crcHex;
+	}
+
+	// --- Render QR using qrcode-generator library ---
+	function renderQR(text) {
+		// Auto-detect type number (1-40), error correction M
+		var qr = qrcode(0, 'M');
+		qr.addData(text);
+		qr.make();
+
+		var canvas = document.getElementById('qris-canvas');
+		var ctx = canvas.getContext('2d');
+		var moduleCount = qr.getModuleCount();
+		var scale = 4;
+		var quiet = 4;
+		var total = moduleCount + quiet * 2;
+
+		canvas.width = total * scale;
+		canvas.height = total * scale;
+
+		// White background
+		ctx.fillStyle = '#ffffff';
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+		// Draw modules
+		ctx.fillStyle = '#000000';
+		for (var r = 0; r < moduleCount; r++) {
+			for (var c = 0; c < moduleCount; c++) {
+				if (qr.isDark(r, c)) {
+					ctx.fillRect((quiet + c) * scale, (quiet + r) * scale, scale, scale);
+				}
+			}
+		}
+	}
+
+	// --- DOM Elements ---
+	var btnBeli = document.getElementById('btn-beli');
+	var modalForm = document.getElementById('modal-form');
+	var modalQRIS = document.getElementById('modal-qris');
+	var closeForm = document.getElementById('close-form');
+	var closeQRIS = document.getElementById('close-qris');
+	var formBeli = document.getElementById('form-beli');
+	var inputNama = document.getElementById('input-nama');
+	var inputWA = document.getElementById('input-wa');
+	var timerBar = document.getElementById('timer-bar');
+	var timerText = document.getElementById('timer-text');
+	var btnWA = document.getElementById('btn-wa');
+
+	var timerInterval = null;
+	var buyerData = { nama: '', wa: '' };
+
+	// Open form modal
+	btnBeli.addEventListener('click', function () {
+		modalForm.classList.remove('hidden');
+		modalForm.classList.add('flex');
+	});
+
+	// Close modals
+	closeForm.addEventListener('click', function () {
+		modalForm.classList.add('hidden');
+		modalForm.classList.remove('flex');
+	});
+
+	closeQRIS.addEventListener('click', function () {
+		modalQRIS.classList.add('hidden');
+		modalQRIS.classList.remove('flex');
+		clearInterval(timerInterval);
+	});
+
+	// Click outside to close
+	modalForm.addEventListener('click', function (e) {
+		if (e.target === modalForm) {
+			modalForm.classList.add('hidden');
+			modalForm.classList.remove('flex');
+		}
+	});
+
+	modalQRIS.addEventListener('click', function (e) {
+		if (e.target === modalQRIS) {
+			modalQRIS.classList.add('hidden');
+			modalQRIS.classList.remove('flex');
+			clearInterval(timerInterval);
+		}
+	});
+
+	// Form submit
+	formBeli.addEventListener('submit', function (e) {
+		e.preventDefault();
+
+		var nama = inputNama.value.trim();
+		var wa = inputWA.value.trim();
+
+		if (nama.length < 2) {
+			inputNama.focus();
+			return;
+		}
+
+		// Normalize WA number
+		var waNormalized = wa.replace(/\s|-/g, '');
+		if (waNormalized.startsWith('0')) {
+			waNormalized = '62' + waNormalized.substring(1);
+		} else if (waNormalized.startsWith('+62')) {
+			waNormalized = waNormalized.substring(1);
+		} else if (waNormalized.startsWith('62')) {
+			// already good
+		} else {
+			inputWA.focus();
+			return;
+		}
+
+		buyerData = { nama: nama, wa: waNormalized };
+
+		// Close form, open QRIS
+		modalForm.classList.add('hidden');
+		modalForm.classList.remove('flex');
+
+		modalQRIS.classList.remove('hidden');
+		modalQRIS.classList.add('flex');
+
+		// Generate dynamic QRIS
+		var payload = generateQRISPayload(AMOUNT);
+		renderQR(payload);
+
+		// Start timer (60 seconds)
+		startTimer();
+	});
+
+	function startTimer() {
+		var seconds = 60;
+		clearInterval(timerInterval);
+
+		timerBar.style.width = '100%';
+		timerText.textContent = '1:00';
+		timerText.classList.remove('text-red-600');
+
+		timerInterval = setInterval(function () {
+			seconds--;
+			var mins = Math.floor(seconds / 60);
+			var secs = seconds % 60;
+			timerText.textContent = mins + ':' + String(secs).padStart(2, '0');
+			timerBar.style.width = ((seconds / 60) * 100) + '%';
+
+			if (seconds <= 0) {
+				clearInterval(timerInterval);
+				timerText.textContent = '0:00';
+				timerBar.style.width = '0%';
+				timerText.classList.add('text-red-600');
+				redirectToWhatsApp();
+			}
+		}, 1000);
+	}
+
+	function redirectToWhatsApp() {
+		var msg = 'Halo, saya ingin membeli Bundle 5 Sistem Laravel 13.\n\nNama: ' + buyerData.nama + '\nNo. HP: ' + buyerData.wa + '\nHarga: Rp' + AMOUNT.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '\n\nBerikut bukti pembayarannya:';
+		var url = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(msg);
+		window.open(url, '_blank');
+	}
+
+	// WhatsApp button
+	btnWA.addEventListener('click', function () {
+		redirectToWhatsApp();
+	});
+})();
+</script>

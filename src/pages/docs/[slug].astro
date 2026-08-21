@@ -4,6 +4,8 @@ import Footer from '../../components/Footer.astro';
 import { getCollection, render } from 'astro:content';
 import { projects } from '../../data/projects';
 
+export const prerender = true;
+
 export async function getStaticPaths() {
 	const entries = await getCollection('projects');
 

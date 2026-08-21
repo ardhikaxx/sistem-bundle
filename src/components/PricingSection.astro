@@ -119,12 +119,17 @@ const AMOUNT = '49000';
 		</div>
 
 		<div class="mt-6 flex justify-center">
-			<canvas id="qris-canvas" class="border border-neutral-200"></canvas>
+			<div id="qris-loading" class="py-8 text-sm text-neutral-500">Memuat QRIS...</div>
+			<canvas id="qris-canvas" class="hidden border border-neutral-200"></canvas>
+			<img id="qris-img" class="hidden border border-neutral-200" alt="QRIS Code" />
 		</div>
 
-		<p class="mt-4 text-xs text-neutral-500">
+		<p id="qris-hint" class="mt-4 text-xs text-neutral-500">
 			Buka aplikasi banking/e-wallet → Scan → Masukkan nominal <strong>{bundle.price}</strong> jika tidak otomatis
 		</p>
+
+		<!-- Payment Status -->
+		<div id="payment-status" class="hidden mt-4 rounded border px-4 py-3 text-sm font-mono"></div>
 
 		<!-- Timer -->
 		<div class="mt-6">
@@ -132,19 +137,19 @@ const AMOUNT = '49000';
 				<div id="timer-bar" class="h-full bg-neutral-900 transition-all duration-1000 ease-linear" style="width:100%"></div>
 			</div>
 			<p class="mt-2 font-mono text-sm text-neutral-500">
-				Sisa waktu: <span id="timer-text" class="font-bold text-neutral-900">1:00</span>
+				Sisa waktu: <span id="timer-text" class="font-bold text-neutral-900">5:00</span>
 			</p>
 		</div>
 
 		<button
 			id="btn-wa"
-			class="mt-6 w-full border border-neutral-900 bg-neutral-900 px-6 py-3 font-mono text-sm font-bold text-white transition hover:bg-neutral-700"
+			class="hidden mt-6 w-full border border-neutral-900 bg-neutral-900 px-6 py-3 font-mono text-sm font-bold text-white transition hover:bg-neutral-700"
 		>
 			Kirim Bukti ke WhatsApp →
 		</button>
 
 		<p class="mt-3 font-mono text-[10px] text-neutral-400">
-			Klik tombol di atas setelah melakukan pembayaran untuk mengirim bukti ke WhatsApp
+			Pembayaran akan terverifikasi otomatis. Setelah berhasil, Anda akan diarahkan ke WhatsApp.
 		</p>
 	</div>
 </div>
@@ -152,87 +157,9 @@ const AMOUNT = '49000';
 <script is:inline>
 (function () {
 	var config = JSON.parse(document.getElementById('payment-config').textContent);
-	var QRIS_PAYLOAD = config.payload;
-	var AMOUNT = config.amount;
+	var AMOUNT = parseInt(config.amount, 10);
 	var WHATSAPP_NUMBER = config.wa;
 
-	// --- CRC-16 CCITT (ISO/IEC 13239) ---
-	function crc16(str) {
-		let crc = 0xffff;
-		for (let i = 0; i < str.length; i++) {
-			crc ^= str.charCodeAt(i) << 8;
-			for (let j = 0; j < 8; j++) {
-				crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
-				crc &= 0xffff;
-			}
-		}
-		return crc;
-	}
-
-	// --- Build TLV ---
-	function tlv(tag, value) {
-		const len = String(value.length).padStart(2, '0');
-		return tag + len + value;
-	}
-
-	// --- Generate dynamic QRIS payload with amount ---
-	function generateQRISPayload(amount) {
-		// Base payload is everything before CRC (tag 63)
-		var base = QRIS_PAYLOAD;
-
-		// Change Tag 01 (Point of Initiation Method) from 010211 (static) to 010212 (dynamic)
-		base = base.replace('010211', '010212');
-
-		// Tag 53 (Currency Code) = "360" (IDR), Tag 53 length = 3
-		// We insert Tag 54 (Transaction Amount) after Tag 53
-		var tag53Str = '5303360';
-		var idx = base.indexOf(tag53Str) + tag53Str.length;
-		var before = base.substring(0, idx);
-		var after = base.substring(idx);
-
-		var amountTLV = tlv('54', amount);
-		var payloadWithoutCRC = before + amountTLV + after;
-
-		// CRC-16 CCITT: calculated over payload + '6304' (tag+length), but NOT the CRC value itself
-		var crcVal = crc16(payloadWithoutCRC + '6304');
-		var crcHex = crcVal.toString(16).toUpperCase().padStart(4, '0');
-
-		return payloadWithoutCRC + '6304' + crcHex;
-	}
-
-	// --- Render QR using qrcode-generator library ---
-	function renderQR(text) {
-		// Auto-detect type number (1-40), error correction M
-		var qr = qrcode(0, 'M');
-		qr.addData(text);
-		qr.make();
-
-		var canvas = document.getElementById('qris-canvas');
-		var ctx = canvas.getContext('2d');
-		var moduleCount = qr.getModuleCount();
-		var scale = 4;
-		var quiet = 4;
-		var total = moduleCount + quiet * 2;
-
-		canvas.width = total * scale;
-		canvas.height = total * scale;
-
-		// White background
-		ctx.fillStyle = '#ffffff';
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-		// Draw modules
-		ctx.fillStyle = '#000000';
-		for (var r = 0; r < moduleCount; r++) {
-			for (var c = 0; c < moduleCount; c++) {
-				if (qr.isDark(r, c)) {
-					ctx.fillRect((quiet + c) * scale, (quiet + r) * scale, scale, scale);
-				}
-			}
-		}
-	}
-
-	// --- DOM Elements ---
 	var btnBeli = document.getElementById('btn-beli');
 	var modalForm = document.getElementById('modal-form');
 	var modalQRIS = document.getElementById('modal-qris');
@@ -244,92 +171,178 @@ const AMOUNT = '49000';
 	var timerBar = document.getElementById('timer-bar');
 	var timerText = document.getElementById('timer-text');
 	var btnWA = document.getElementById('btn-wa');
+	var qrisCanvas = document.getElementById('qris-canvas');
+	var qrisImg = document.getElementById('qris-img');
+	var qrisLoading = document.getElementById('qris-loading');
+	var qrisHint = document.getElementById('qris-hint');
+	var paymentStatus = document.getElementById('payment-status');
 
 	var timerInterval = null;
+	var pollInterval = null;
 	var buyerData = { nama: '', wa: '' };
+	var chargeId = null;
 
-	// Open form modal
-	btnBeli.addEventListener('click', function () {
+	function showStatus(msg, type) {
+		paymentStatus.textContent = msg;
+		paymentStatus.className = 'mt-4 rounded border px-4 py-3 text-sm font-mono ' +
+			(type === 'success' ? 'border-green-600 bg-green-50 text-green-700' :
+			 type === 'error' ? 'border-red-600 bg-red-50 text-red-700' :
+			 'border-neutral-300 bg-neutral-50 text-neutral-600');
+		paymentStatus.classList.remove('hidden');
+	}
+
+	function resetQRISModal() {
+		qrisLoading.classList.remove('hidden');
+		qrisCanvas.classList.add('hidden');
+		qrisImg.classList.add('hidden');
+		qrisHint.classList.add('hidden');
+		paymentStatus.classList.add('hidden');
+		btnWA.classList.add('hidden');
+		chargeId = null;
+	}
+
+	function openFormModal() {
+		resetQRISModal();
 		modalForm.classList.remove('hidden');
 		modalForm.classList.add('flex');
-	});
+	}
 
-	// Close modals
-	closeForm.addEventListener('click', function () {
+	function closeFormModal() {
 		modalForm.classList.add('hidden');
 		modalForm.classList.remove('flex');
-	});
+	}
 
-	closeQRIS.addEventListener('click', function () {
+	function closeQRISModal() {
 		modalQRIS.classList.add('hidden');
 		modalQRIS.classList.remove('flex');
 		clearInterval(timerInterval);
-	});
+		clearInterval(pollInterval);
+	}
 
-	// Click outside to close
+	function openQRISModal() {
+		modalQRIS.classList.remove('hidden');
+		modalQRIS.classList.add('flex');
+	}
+
+	// Open form modal
+	btnBeli.addEventListener('click', openFormModal);
+
+	// Close modals
+	closeForm.addEventListener('click', closeFormModal);
+	closeQRIS.addEventListener('click', closeQRISModal);
+
 	modalForm.addEventListener('click', function (e) {
-		if (e.target === modalForm) {
-			modalForm.classList.add('hidden');
-			modalForm.classList.remove('flex');
-		}
+		if (e.target === modalForm) closeFormModal();
 	});
 
 	modalQRIS.addEventListener('click', function (e) {
-		if (e.target === modalQRIS) {
-			modalQRIS.classList.add('hidden');
-			modalQRIS.classList.remove('flex');
-			clearInterval(timerInterval);
-		}
+		if (e.target === modalQRIS) closeQRISModal();
 	});
 
-	// Form submit
+	// Form submit -> create GoPay charge
 	formBeli.addEventListener('submit', function (e) {
 		e.preventDefault();
 
 		var nama = inputNama.value.trim();
 		var wa = inputWA.value.trim();
 
-		if (nama.length < 2) {
-			inputNama.focus();
-			return;
-		}
+		if (nama.length < 2) { inputNama.focus(); return; }
 
-		// Normalize WA number
 		var waNormalized = wa.replace(/\s|-/g, '');
 		if (waNormalized.startsWith('0')) {
 			waNormalized = '62' + waNormalized.substring(1);
 		} else if (waNormalized.startsWith('+62')) {
 			waNormalized = waNormalized.substring(1);
-		} else if (waNormalized.startsWith('62')) {
-			// already good
-		} else {
+		} else if (!waNormalized.startsWith('62')) {
 			inputWA.focus();
 			return;
 		}
 
 		buyerData = { nama: nama, wa: waNormalized };
 
-		// Close form, open QRIS
-		modalForm.classList.add('hidden');
-		modalForm.classList.remove('flex');
-
-		modalQRIS.classList.remove('hidden');
-		modalQRIS.classList.add('flex');
-
-		// Generate dynamic QRIS
-		var payload = generateQRISPayload(AMOUNT);
-		renderQR(payload);
-
-		// Start timer (60 seconds)
+		closeFormModal();
+		resetQRISModal();
+		openQRISModal();
 		startTimer();
+
+		// Create charge via API
+		fetch('/api/create-charge', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ amount: AMOUNT, phone: buyerData.wa, name: buyerData.nama }),
+		})
+		.then(function (res) { return res.json(); })
+		.then(function (data) {
+			if (data.error) throw new Error(data.error);
+
+			chargeId = data.id;
+			qrisLoading.classList.add('hidden');
+
+			// Display QR code
+			if (data.payment && data.payment.qr_code) {
+				var qr = data.payment.qr_code;
+				if (qr.startsWith('data:') || qr.startsWith('http')) {
+					qrisImg.src = qr;
+					qrisImg.classList.remove('hidden');
+				} else {
+					// It's a raw QR string, generate QR on client
+					generateQR(qr);
+				}
+			} else if (data.qr_code) {
+				// Alternative: top-level qr_code field
+				var qr2 = data.qr_code;
+				if (qr2.startsWith('data:') || qr2.startsWith('http')) {
+					qrisImg.src = qr2;
+					qrisImg.classList.remove('hidden');
+				} else {
+					generateQR(qr2);
+				}
+			} else {
+				// Fallback: generate QR from charge ID
+				generateQR(chargeId);
+			}
+
+			qrisHint.classList.remove('hidden');
+			showStatus('Menunggu pembayaran...', 'pending');
+
+			// Start polling
+			startPolling();
+		})
+		.catch(function (err) {
+			qrisLoading.classList.add('hidden');
+			showStatus('Gagal membuat QR: ' + err.message, 'error');
+		});
 	});
 
-	function startTimer() {
-		var seconds = 60;
-		clearInterval(timerInterval);
+	function generateQR(text) {
+		var qr = qrcode(0, 'M');
+		qr.addData(text);
+		qr.make();
+		var ctx = qrisCanvas.getContext('2d');
+		var moduleCount = qr.getModuleCount();
+		var scale = 4;
+		var quiet = 4;
+		var total = moduleCount + quiet * 2;
+		qrisCanvas.width = total * scale;
+		qrisCanvas.height = total * scale;
+		ctx.fillStyle = '#ffffff';
+		ctx.fillRect(0, 0, qrisCanvas.width, qrisCanvas.height);
+		ctx.fillStyle = '#000000';
+		for (var r = 0; r < moduleCount; r++) {
+			for (var c = 0; c < moduleCount; c++) {
+				if (qr.isDark(r, c)) {
+					ctx.fillRect((quiet + c) * scale, (quiet + r) * scale, scale, scale);
+				}
+			}
+		}
+		qrisCanvas.classList.remove('hidden');
+	}
 
+	function startTimer() {
+		var seconds = 300;
+		clearInterval(timerInterval);
 		timerBar.style.width = '100%';
-		timerText.textContent = '1:00';
+		timerText.textContent = '5:00';
 		timerText.classList.remove('text-red-600');
 
 		timerInterval = setInterval(function () {
@@ -337,30 +350,52 @@ const AMOUNT = '49000';
 			var mins = Math.floor(seconds / 60);
 			var secs = seconds % 60;
 			timerText.textContent = mins + ':' + String(secs).padStart(2, '0');
-			timerBar.style.width = ((seconds / 60) * 100) + '%';
+			timerBar.style.width = ((seconds / 300) * 100) + '%';
 
 			if (seconds <= 0) {
 				clearInterval(timerInterval);
+				clearInterval(pollInterval);
 				timerText.textContent = '0:00';
 				timerBar.style.width = '0%';
 				timerText.classList.add('text-red-600');
-				setTimeout(function () {
-					modalQRIS.classList.add('hidden');
-					modalQRIS.classList.remove('flex');
-				}, 1500);
+				showStatus('Waktu habis. Silakan coba lagi.', 'error');
+				setTimeout(closeQRISModal, 2000);
 			}
 		}, 1000);
 	}
 
+	function startPolling() {
+		clearInterval(pollInterval);
+		pollInterval = setInterval(function () {
+			if (!chargeId) return;
+
+			fetch('/api/check-status?id=' + encodeURIComponent(chargeId))
+			.then(function (res) { return res.json(); })
+			.then(function (data) {
+				if (data.error) return;
+
+				var status = (data.status || '').toUpperCase();
+
+				if (status === 'SUCCESS' || status === 'SETTLED') {
+					clearInterval(pollInterval);
+					clearInterval(timerInterval);
+					showStatus('Pembayaran berhasil!', 'success');
+					setTimeout(redirectToWhatsApp, 1500);
+				} else if (status === 'FAILED' || status === 'EXPIRED') {
+					clearInterval(pollInterval);
+					showStatus('Pembayaran gagal. Silakan coba lagi.', 'error');
+				}
+			})
+			.catch(function () {});
+		}, 3000);
+	}
+
 	function redirectToWhatsApp() {
-		var msg = 'Halo, saya ingin membeli Bundle 5 Sistem Laravel 13.\n\nNama: ' + buyerData.nama + '\nNo. HP: ' + buyerData.wa + '\nHarga: Rp' + AMOUNT.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '\n\nBerikut bukti pembayarannya:';
+		var msg = 'Halo, saya ingin membeli Bundle 5 Sistem Laravel 13.\n\nNama: ' + buyerData.nama + '\nNo. HP: ' + buyerData.wa + '\nHarga: Rp' + AMOUNT.toLocaleString('id-ID') + '\n\nBerikut bukti pembayarannya:';
 		var url = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(msg);
 		window.open(url, '_blank');
 	}
 
-	// WhatsApp button
-	btnWA.addEventListener('click', function () {
-		redirectToWhatsApp();
-	});
+	btnWA.addEventListener('click', redirectToWhatsApp);
 })();
 </script>

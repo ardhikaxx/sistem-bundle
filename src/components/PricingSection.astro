@@ -37,8 +37,9 @@ const AMOUNT = '49000';
 							</div>
 						))}
 					</div>
-					<button id="btn-beli" class="mt-8 w-full border border-neutral-900 bg-neutral-900 px-6 py-3 font-mono text-sm font-bold text-white transition hover:bg-neutral-700">Beli Sekarang</button>
-					<p class="mt-3 font-mono text-[10px] uppercase tracking-wider text-neutral-400 text-center">Pembayaran via QRIS · File dikirim via WhatsApp</p>
+				<button id="btn-beli" class="mt-8 w-full border border-neutral-900 bg-neutral-900 px-6 py-3 font-mono text-sm font-bold text-white transition hover:bg-neutral-700">Beli Sekarang</button>
+				<button id="btn-konfirmasi" class="mt-3 w-full border border-neutral-300 px-6 py-3 font-mono text-sm font-bold text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900">Konfirmasi Pembayaran Selesai</button>
+				<p class="mt-3 font-mono text-[10px] uppercase tracking-wider text-neutral-400 text-center">Pembayaran via QRIS · File dikirim via WhatsApp</p>
 				</div>
 			</div>
 		</div>
@@ -186,6 +187,10 @@ const AMOUNT = '49000';
 	}
 
 	function redirectToWhatsApp() {
+		if (!buyerData.nama || !buyerData.wa) {
+			openModal('modal-form');
+			return;
+		}
 		var msg = 'Halo, saya ingin membeli Bundle 5 Sistem Laravel 13.\n\nNama: ' + buyerData.nama + '\nNo. HP: ' + buyerData.wa + '\nHarga: Rp' + AMOUNT.toLocaleString('id-ID') + '\n\nBerikut bukti pembayarannya:';
 		window.open('https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(msg), '_blank');
 	}
@@ -194,6 +199,7 @@ const AMOUNT = '49000';
 	function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
 
 	document.getElementById('btn-beli').addEventListener('click', function() { openModal('modal-form'); });
+	document.getElementById('btn-konfirmasi').addEventListener('click', function() { redirectToWhatsApp(); });
 	document.getElementById('close-form').addEventListener('click', function() { closeModal('modal-form'); });
 	document.getElementById('close-qris').addEventListener('click', function() { clearInterval(timerInterval); closeModal('modal-qris'); });
 

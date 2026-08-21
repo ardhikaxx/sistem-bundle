@@ -344,6 +344,8 @@ const AMOUNT = '49000';
 				timerText.textContent = '0:00';
 				timerBar.style.width = '0%';
 				timerText.classList.add('text-red-600');
+				modalQRIS.classList.add('hidden');
+				modalQRIS.classList.remove('flex');
 				redirectToWhatsApp();
 			}
 		}, 1000);

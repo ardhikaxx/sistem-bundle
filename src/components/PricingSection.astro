@@ -2,11 +2,12 @@
 import { bundle, projects } from '../data/projects';
 
 const WHATSAPP_NUMBER = '6285933648537';
+const QRIS_PAYLOAD = '00020101021126610014COM.GO-JEK.WWW01189360091438465549940210G8465549940303UMI51440014ID.CO.QRIS.WWW0215ID10264739285820303UMI5204899953033605802ID5925Yanuar Ardhika ID, Digita6009BONDOWOSO61056828162070703A01';
 const AMOUNT = '49000';
 ---
 
 <script is:inline type="application/json" id="payment-config">
-{"amount":"49000","wa":"6285933648537"}
+{"payload":"00020101021126610014COM.GO-JEK.WWW01189360091438465549940210G8465549940303UMI51440014ID.CO.QRIS.WWW0215ID10264739285820303UMI5204899953033605802ID5925Yanuar Ardhika ID, Digita6009BONDOWOSO61056828162070703A01","amount":"49000","wa":"6285933648537"}
 </script>
 
 <section id="harga" class="border-b border-neutral-900">
@@ -117,33 +118,29 @@ const AMOUNT = '49000';
 		<div class="mt-6 flex justify-center">
 			<div id="qris-loading" class="py-8 text-sm text-neutral-500">Memuat QRIS...</div>
 			<canvas id="qris-canvas" class="hidden border border-neutral-200"></canvas>
-			<img id="qris-img" class="hidden border border-neutral-200" alt="QRIS Code" />
 		</div>
 
 		<p id="qris-hint" class="mt-4 text-xs text-neutral-500">
 			Buka aplikasi banking/e-wallet → Scan → Masukkan nominal <strong>{bundle.price}</strong> jika tidak otomatis
 		</p>
 
-		<div id="payment-status" class="hidden mt-4 rounded border px-4 py-3 text-sm font-mono"></div>
-
-		<div class="mt-6">
-			<div class="mx-auto h-1.5 w-full max-w-xs overflow-hidden bg-neutral-100">
-				<div id="timer-bar" class="h-full bg-neutral-900 transition-all duration-1000 ease-linear" style="width:100%"></div>
-			</div>
-			<p class="mt-2 font-mono text-sm text-neutral-500">
-				Sisa waktu: <span id="timer-text" class="font-bold text-neutral-900">5:00</span>
-			</p>
+		<div class="mt-6 flex gap-3">
+			<button
+				id="btn-wa"
+				class="flex-1 border border-neutral-900 bg-neutral-900 px-6 py-3 font-mono text-sm font-bold text-white transition hover:bg-neutral-700"
+			>
+				Kirim Bukti ke WhatsApp →
+			</button>
+			<button
+				id="btn-copy"
+				class="border border-neutral-300 px-4 py-3 font-mono text-sm text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900"
+			>
+				Copy Nominal
+			</button>
 		</div>
 
-		<button
-			id="btn-wa"
-			class="hidden mt-6 w-full border border-neutral-900 bg-neutral-900 px-6 py-3 font-mono text-sm font-bold text-white transition hover:bg-neutral-700"
-		>
-			Kirim Bukti ke WhatsApp →
-		</button>
-
 		<p class="mt-3 font-mono text-[10px] text-neutral-400">
-			Pembayaran akan terverifikasi otomatis. Setelah berhasil, Anda akan diarahkan ke WhatsApp.
+			Pastikan nominal Rp{bundle.price} sesuai saat scan. Kirim bukti ke WhatsApp setelah pembayaran.
 		</p>
 	</div>
 </div>
@@ -151,6 +148,7 @@ const AMOUNT = '49000';
 <script is:inline>
 (function () {
 	var config = JSON.parse(document.getElementById('payment-config').textContent);
+	var BASE_PAYLOAD = config.payload;
 	var AMOUNT = parseInt(config.amount, 10);
 	var WHATSAPP_NUMBER = config.wa;
 
@@ -162,43 +160,84 @@ const AMOUNT = '49000';
 	var formBeli = document.getElementById('form-beli');
 	var inputNama = document.getElementById('input-nama');
 	var inputWA = document.getElementById('input-wa');
-	var timerBar = document.getElementById('timer-bar');
-	var timerText = document.getElementById('timer-text');
 	var btnWA = document.getElementById('btn-wa');
+	var btnCopy = document.getElementById('btn-copy');
 	var qrisCanvas = document.getElementById('qris-canvas');
-	var qrisImg = document.getElementById('qris-img');
 	var qrisLoading = document.getElementById('qris-loading');
 	var qrisHint = document.getElementById('qris-hint');
-	var paymentStatus = document.getElementById('payment-status');
 
-	var timerInterval = null;
-	var pollInterval = null;
 	var buyerData = { nama: '', wa: '' };
-	var trxId = null;
-	var qrisAmount = 0;
 
-	function showStatus(msg, type) {
-		paymentStatus.textContent = msg;
-		paymentStatus.className = 'mt-4 rounded border px-4 py-3 text-sm font-mono ' +
-			(type === 'success' ? 'border-green-600 bg-green-50 text-green-700' :
-			 type === 'error' ? 'border-red-600 bg-red-50 text-red-700' :
-			 'border-neutral-300 bg-neutral-50 text-neutral-600');
-		paymentStatus.classList.remove('hidden');
+	function crc16(str) {
+		var多项 = 0x1021;
+		var crc = 0xFFFF;
+		for (var i = 0; i < str.length; i++) {
+			crc ^= str.charCodeAt(i) << 8;
+			for (var j = 0; j < 8; j++) {
+				if (crc & 0x8000) {
+					crc = ((crc << 1) ^ 多项) & 0xFFFF;
+				} else {
+					crc = (crc << 1) & 0xFFFF;
+				}
+			}
+		}
+		return crc;
 	}
 
-	function resetQRISModal() {
-		qrisLoading.classList.remove('hidden');
-		qrisCanvas.classList.add('hidden');
-		qrisImg.classList.add('hidden');
-		qrisHint.classList.add('hidden');
-		paymentStatus.classList.add('hidden');
-		btnWA.classList.add('hidden');
-		trxId = null;
-		qrisAmount = 0;
+	function padZero(n) {
+		return n < 10 ? '0' + n : '' + n;
+	}
+
+	function generateDynamicQRIS(amount) {
+		var payload = BASE_PAYLOAD.replace('010211', '010212');
+
+		var amountStr = amount.toString();
+		var amountTag = '54' + padZero(amountStr.length) + amountStr;
+		var insertPos = payload.indexOf('5802ID');
+
+		var newPayload;
+		if (insertPos !== -1) {
+			newPayload = payload.substring(0, insertPos) + amountTag + payload.substring(insertPos);
+		} else {
+			newPayload = payload + amountTag;
+		}
+
+		var checksumPayload = newPayload + '6304';
+		var crc = crc16(checksumPayload);
+		var crcHex = crc.toString(16).toUpperCase().padStart(4, '0');
+
+		return newPayload + '6304' + crcHex;
+	}
+
+	function showQR(text) {
+		var qr = qrcode(0, 'M');
+		qr.addData(text);
+		qr.make();
+		var ctx = qrisCanvas.getContext('2d');
+		var moduleCount = qr.getModuleCount();
+		var scale = 4;
+		var quiet = 4;
+		var total = moduleCount + quiet * 2;
+		qrisCanvas.width = total * scale;
+		qrisCanvas.height = total * scale;
+		ctx.fillStyle = '#ffffff';
+		ctx.fillRect(0, 0, qrisCanvas.width, qrisCanvas.height);
+		ctx.fillStyle = '#000000';
+		for (var r = 0; r < moduleCount; r++) {
+			for (var c = 0; c < moduleCount; c++) {
+				if (qr.isDark(r, c)) {
+					ctx.fillRect((quiet + c) * scale, (quiet + r) * scale, scale, scale);
+				}
+			}
+		}
+		qrisLoading.classList.add('hidden');
+		qrisCanvas.classList.remove('hidden');
 	}
 
 	function openFormModal() {
-		resetQRISModal();
+		qrisLoading.classList.remove('hidden');
+		qrisCanvas.classList.add('hidden');
+		qrisHint.classList.add('hidden');
 		modalForm.classList.remove('hidden');
 		modalForm.classList.add('flex');
 	}
@@ -211,8 +250,6 @@ const AMOUNT = '49000';
 	function closeQRISModal() {
 		modalQRIS.classList.add('hidden');
 		modalQRIS.classList.remove('flex');
-		clearInterval(timerInterval);
-		clearInterval(pollInterval);
 	}
 
 	function openQRISModal() {
@@ -254,112 +291,12 @@ const AMOUNT = '49000';
 		buyerData = { nama: nama, wa: waNormalized };
 
 		closeFormModal();
-		resetQRISModal();
 		openQRISModal();
-		startTimer();
 
-		fetch('/api/create-charge', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ amount: AMOUNT }),
-		})
-		.then(function (res) { return res.json(); })
-		.then(function (data) {
-			if (data.error) throw new Error(data.error);
-
-			trxId = data.data.trx_id;
-			qrisAmount = data.data.amount;
-			qrisLoading.classList.add('hidden');
-
-			var qrisUrl = data.data.qris_url;
-			if (qrisUrl) {
-				qrisImg.src = qrisUrl;
-				qrisImg.classList.remove('hidden');
-			} else {
-				generateQR(data.data.qris_code);
-			}
-
-			qrisHint.classList.remove('hidden');
-			showStatus('Menunggu pembayaran...', 'pending');
-
-			startPolling();
-		})
-		.catch(function (err) {
-			qrisLoading.classList.add('hidden');
-			showStatus('Gagal membuat QR: ' + err.message, 'error');
-		});
+		var dynamicPayload = generateDynamicQRIS(AMOUNT);
+		showQR(dynamicPayload);
+		qrisHint.classList.remove('hidden');
 	});
-
-	function generateQR(text) {
-		var qr = qrcode(0, 'M');
-		qr.addData(text);
-		qr.make();
-		var ctx = qrisCanvas.getContext('2d');
-		var moduleCount = qr.getModuleCount();
-		var scale = 4;
-		var quiet = 4;
-		var total = moduleCount + quiet * 2;
-		qrisCanvas.width = total * scale;
-		qrisCanvas.height = total * scale;
-		ctx.fillStyle = '#ffffff';
-		ctx.fillRect(0, 0, qrisCanvas.width, qrisCanvas.height);
-		ctx.fillStyle = '#000000';
-		for (var r = 0; r < moduleCount; r++) {
-			for (var c = 0; c < moduleCount; c++) {
-				if (qr.isDark(r, c)) {
-					ctx.fillRect((quiet + c) * scale, (quiet + r) * scale, scale, scale);
-				}
-			}
-		}
-		qrisCanvas.classList.remove('hidden');
-	}
-
-	function startTimer() {
-		var seconds = 300;
-		clearInterval(timerInterval);
-		timerBar.style.width = '100%';
-		timerText.textContent = '5:00';
-		timerText.classList.remove('text-red-600');
-
-		timerInterval = setInterval(function () {
-			seconds--;
-			var mins = Math.floor(seconds / 60);
-			var secs = seconds % 60;
-			timerText.textContent = mins + ':' + String(secs).padStart(2, '0');
-			timerBar.style.width = ((seconds / 300) * 100) + '%';
-
-			if (seconds <= 0) {
-				clearInterval(timerInterval);
-				clearInterval(pollInterval);
-				timerText.textContent = '0:00';
-				timerBar.style.width = '0%';
-				timerText.classList.add('text-red-600');
-				showStatus('Waktu habis. Silakan coba lagi.', 'error');
-				setTimeout(closeQRISModal, 2000);
-			}
-		}, 1000);
-	}
-
-	function startPolling() {
-		clearInterval(pollInterval);
-		pollInterval = setInterval(function () {
-			if (!trxId) return;
-
-			fetch('/api/check-status?amount=' + qrisAmount + '&trx_id=' + encodeURIComponent(trxId))
-			.then(function (res) { return res.json(); })
-			.then(function (data) {
-				if (data.error) return;
-
-				if (data.paid) {
-					clearInterval(pollInterval);
-					clearInterval(timerInterval);
-					showStatus('Pembayaran berhasil!', 'success');
-					setTimeout(redirectToWhatsApp, 1500);
-				}
-			})
-			.catch(function () {});
-		}, 8000);
-	}
 
 	function redirectToWhatsApp() {
 		var msg = 'Halo, saya ingin membeli Bundle 5 Sistem Laravel 13.\n\nNama: ' + buyerData.nama + '\nNo. HP: ' + buyerData.wa + '\nHarga: Rp' + AMOUNT.toLocaleString('id-ID') + '\n\nBerikut bukti pembayarannya:';
@@ -368,5 +305,14 @@ const AMOUNT = '49000';
 	}
 
 	btnWA.addEventListener('click', redirectToWhatsApp);
+
+	btnCopy.addEventListener('click', function () {
+		navigator.clipboard.writeText(AMOUNT.toString()).then(function () {
+			btnCopy.textContent = 'Tersalin!';
+			setTimeout(function () {
+				btnCopy.textContent = 'Copy Nominal';
+			}, 2000);
+		});
+	});
 })();
 </script>

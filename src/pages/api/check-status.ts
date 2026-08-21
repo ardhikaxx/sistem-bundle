@@ -1,25 +1,26 @@
 import type { APIRoute } from 'astro';
-import { checkChargeStatus } from '../../lib/gopay';
+import { checkPayment } from '../../lib/gopay';
 
 export const GET: APIRoute = async ({ url }) => {
 	try {
-		const chargeId = url.searchParams.get('id');
+		const amount = Number(url.searchParams.get('amount'));
+		const trxId = url.searchParams.get('trx_id');
 
-		if (!chargeId) {
-			return new Response(JSON.stringify({ error: 'id parameter is required' }), {
+		if (!amount || !trxId) {
+			return new Response(JSON.stringify({ error: 'amount and trx_id are required' }), {
 				status: 400,
 				headers: { 'Content-Type': 'application/json' },
 			});
 		}
 
-		const charge = await checkChargeStatus(chargeId);
+		const result = await checkPayment(amount, trxId);
 
-		return new Response(JSON.stringify(charge), {
+		return new Response(JSON.stringify(result), {
 			status: 200,
 			headers: { 'Content-Type': 'application/json' },
 		});
 	} catch (err: any) {
-		console.error('Check status error:', err);
+		console.error('Check payment error:', err);
 		return new Response(JSON.stringify({ error: err.message || 'Internal server error' }), {
 			status: 500,
 			headers: { 'Content-Type': 'application/json' },

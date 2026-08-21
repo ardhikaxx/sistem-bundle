@@ -1,25 +1,25 @@
 import type { APIRoute } from 'astro';
-import { createCharge } from '../../lib/gopay';
+import { createQRIS } from '../../lib/gopay';
 
 export const POST: APIRoute = async ({ request }) => {
 	try {
-		const { amount, phone, name } = await request.json();
+		const { amount } = await request.json();
 
-		if (!amount || !phone || !name) {
-			return new Response(JSON.stringify({ error: 'amount, phone, and name are required' }), {
+		if (!amount) {
+			return new Response(JSON.stringify({ error: 'amount is required' }), {
 				status: 400,
 				headers: { 'Content-Type': 'application/json' },
 			});
 		}
 
-		const charge = await createCharge({ amount, phone, name });
+		const result = await createQRIS(amount);
 
-		return new Response(JSON.stringify(charge), {
+		return new Response(JSON.stringify(result), {
 			status: 200,
 			headers: { 'Content-Type': 'application/json' },
 		});
 	} catch (err: any) {
-		console.error('Create charge error:', err);
+		console.error('Create QRIS error:', err);
 		return new Response(JSON.stringify({ error: err.message || 'Internal server error' }), {
 			status: 500,
 			headers: { 'Content-Type': 'application/json' },

@@ -1,110 +1,86 @@
-const GOPAY_BASE_URL =
-	process.env.GOPAY_ENV === 'production'
-		? 'https://api.gopay.co.id'
-		: 'https://api.sandbox.gopay.co.id';
+const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:3000';
+const GATEWAY_API_KEY = process.env.GATEWAY_API_KEY || '';
 
-let accessToken: string | null = null;
-let tokenExpiry = 0;
-
-async function getAccessToken(): Promise<string> {
-	if (accessToken && Date.now() < tokenExpiry) {
-		return accessToken;
-	}
-
-	const clientId = process.env.GOPAY_CLIENT_ID;
-	const clientSecret = process.env.GOPAY_CLIENT_SECRET;
-
-	if (!clientId || !clientSecret) {
-		throw new Error('GOPAY_CLIENT_ID and GOPAY_CLIENT_SECRET must be set');
-	}
-
-	const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-
-	const res = await fetch(`${GOPAY_BASE_URL}/v1/auth`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Basic ${credentials}`,
-		},
-		body: JSON.stringify({
-			grant_type: 'client_credentials',
-		}),
-	});
-
-	if (!res.ok) {
-		const err = await res.text();
-		throw new Error(`GoPay auth failed: ${res.status} ${err}`);
-	}
-
-	const data = await res.json();
-	accessToken = data.access_token;
-	tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
-	return accessToken!;
-}
-
-export interface CreateChargeParams {
+export interface CreateQRISParams {
 	amount: number;
-		phone: string;
-	name: string;
 }
 
-export interface ChargeResponse {
-	id: string;
-	status: string;
-	amount: { value: number; currency: string };
-	merchant_code: string;
-	external_id: string;
-	payment?: {
-		type: string;
-		qr_code?: string;
+export interface QRISResponse {
+	success: boolean;
+	data?: {
+		qris_id: string;
+		trx_id: string;
+		qris_url: string;
+		qris_code: string;
+		amount: number;
+		expires_at: string;
+		expires_in: string;
 	};
+	message?: string;
 }
 
-export async function createCharge(params: CreateChargeParams): Promise<ChargeResponse> {
-	const token = await getAccessToken();
-	const merchantCode = process.env.GOPAY_MERCHANT_CODE || '';
-	const externalId = `BUNDLE-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+export interface PaymentCheckResponse {
+	success: boolean;
+	paid: boolean;
+	transaction?: {
+		transaction_id: string;
+		order_id: string;
+		amount: number;
+		payer_issuer: string;
+		payment_type: string;
+		transaction_time: string;
+	};
+	message?: string;
+}
 
-	const res = await fetch(`${GOPAY_BASE_URL}/v1/charges`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${token}`,
-		},
-		body: JSON.stringify({
-			merchant_code: merchantCode,
-			external_id: externalId,
-			type: 'PAYMENT_QRIS',
-			amount: { value: params.amount, currency: 'IDR' },
-			customer: {
-				name: params.name,
-				phone: params.phone,
-			},
-			callback_url: process.env.GOPAY_CALLBACK_URL || undefined,
-		}),
-	});
+export async function createQRIS(amount: number): Promise<QRISResponse> {
+	const res = await fetch(
+		`${GATEWAY_URL}/create-qris?amount=${amount}&api_key=${GATEWAY_API_KEY}`
+	);
 
 	if (!res.ok) {
 		const err = await res.text();
-		throw new Error(`Create charge failed: ${res.status} ${err}`);
+		throw new Error(`Create QRIS failed: ${res.status} ${err}`);
 	}
 
 	return res.json();
 }
 
-export async function checkChargeStatus(chargeId: string): Promise<ChargeResponse> {
-	const token = await getAccessToken();
-
-	const res = await fetch(`${GOPAY_BASE_URL}/v1/charges/${chargeId}`, {
-		method: 'GET',
-		headers: {
-			Authorization: `Bearer ${token}`,
-		},
-	});
+export async function checkPayment(
+	amount: number,
+	trxId: string
+): Promise<PaymentCheckResponse> {
+	const res = await fetch(
+		`${GATEWAY_URL}/check-payment?amount=${amount}&trx_id=${trxId}&api_key=${GATEWAY_API_KEY}`
+	);
 
 	if (!res.ok) {
 		const err = await res.text();
-		throw new Error(`Check status failed: ${res.status} ${err}`);
+		throw new Error(`Check payment failed: ${res.status} ${err}`);
+	}
+
+	return res.json();
+}
+
+export async function getQRStatus(qrisId: string) {
+	const res = await fetch(`${GATEWAY_URL}/api/qr-status/${qrisId}`);
+
+	if (!res.ok) {
+		const err = await res.text();
+		throw new Error(`Get QR status failed: ${res.status} ${err}`);
+	}
+
+	return res.json();
+}
+
+export async function getTokenStatus() {
+	const res = await fetch(
+		`${GATEWAY_URL}/token-status?api_key=${GATEWAY_API_KEY}`
+	);
+
+	if (!res.ok) {
+		const err = await res.text();
+		throw new Error(`Token status failed: ${res.status} ${err}`);
 	}
 
 	return res.json();

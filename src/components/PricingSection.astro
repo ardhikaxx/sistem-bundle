@@ -2,12 +2,11 @@
 import { bundle, projects } from '../data/projects';
 
 const WHATSAPP_NUMBER = '6285933648537';
-const QRIS_PAYLOAD = '00020101021126610014COM.GO-JEK.WWW01189360091438465549940210G8465549940303UMI51440014ID.CO.QRIS.WWW0215ID10264739285820303UMI5204899953033605802ID5925Yanuar Ardhika ID, Digita6009BONDOWOSO61056828162070703A01';
 const AMOUNT = '49000';
 ---
 
 <script is:inline type="application/json" id="payment-config">
-{"payload":"00020101021126610014COM.GO-JEK.WWW01189360091438465549940210G8465549940303UMI51440014ID.CO.QRIS.WWW0215ID10264739285820303UMI5204899953033605802ID5925Yanuar Ardhika ID, Digita6009BONDOWOSO61056828162070703A01","amount":"49000","wa":"6285933648537"}
+{"amount":"49000","wa":"6285933648537"}
 </script>
 
 <section id="harga" class="border-b border-neutral-900">
@@ -18,9 +17,7 @@ const AMOUNT = '49000';
 		</div>
 
 		<div class="mx-auto max-w-3xl border border-neutral-900">
-			<!-- Mobile: stacked, Desktop: side by side -->
 			<div class="grid md:grid-cols-2">
-				<!-- Left: Harga -->
 				<div class="flex flex-col items-center justify-center border-b border-neutral-900 p-8 md:border-b-0 md:border-r md:border-neutral-900">
 					<p class="font-mono text-xs uppercase tracking-[0.3em] text-neutral-500">Bundle Lengkap</p>
 					<span class="mt-4 text-lg text-neutral-400 line-through">{bundle.priceOriginal}</span>
@@ -28,7 +25,6 @@ const AMOUNT = '49000';
 					<p class="mt-2 font-mono text-xs text-neutral-500">{bundle.priceLabel}</p>
 				</div>
 
-				<!-- Right: List Sistem + Tombol -->
 				<div class="flex flex-col p-8">
 					<p class="font-mono text-xs uppercase tracking-[0.3em] text-neutral-500">Yang Anda Dapatkan</p>
 					<div class="mt-4 flex-1 space-y-3">
@@ -128,10 +124,8 @@ const AMOUNT = '49000';
 			Buka aplikasi banking/e-wallet → Scan → Masukkan nominal <strong>{bundle.price}</strong> jika tidak otomatis
 		</p>
 
-		<!-- Payment Status -->
 		<div id="payment-status" class="hidden mt-4 rounded border px-4 py-3 text-sm font-mono"></div>
 
-		<!-- Timer -->
 		<div class="mt-6">
 			<div class="mx-auto h-1.5 w-full max-w-xs overflow-hidden bg-neutral-100">
 				<div id="timer-bar" class="h-full bg-neutral-900 transition-all duration-1000 ease-linear" style="width:100%"></div>
@@ -180,7 +174,8 @@ const AMOUNT = '49000';
 	var timerInterval = null;
 	var pollInterval = null;
 	var buyerData = { nama: '', wa: '' };
-	var chargeId = null;
+	var trxId = null;
+	var qrisAmount = 0;
 
 	function showStatus(msg, type) {
 		paymentStatus.textContent = msg;
@@ -198,7 +193,8 @@ const AMOUNT = '49000';
 		qrisHint.classList.add('hidden');
 		paymentStatus.classList.add('hidden');
 		btnWA.classList.add('hidden');
-		chargeId = null;
+		trxId = null;
+		qrisAmount = 0;
 	}
 
 	function openFormModal() {
@@ -224,10 +220,8 @@ const AMOUNT = '49000';
 		modalQRIS.classList.add('flex');
 	}
 
-	// Open form modal
 	btnBeli.addEventListener('click', openFormModal);
 
-	// Close modals
 	closeForm.addEventListener('click', closeFormModal);
 	closeQRIS.addEventListener('click', closeQRISModal);
 
@@ -239,7 +233,6 @@ const AMOUNT = '49000';
 		if (e.target === modalQRIS) closeQRISModal();
 	});
 
-	// Form submit -> create GoPay charge
 	formBeli.addEventListener('submit', function (e) {
 		e.preventDefault();
 
@@ -265,47 +258,30 @@ const AMOUNT = '49000';
 		openQRISModal();
 		startTimer();
 
-		// Create charge via API
 		fetch('/api/create-charge', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ amount: AMOUNT, phone: buyerData.wa, name: buyerData.nama }),
+			body: JSON.stringify({ amount: AMOUNT }),
 		})
 		.then(function (res) { return res.json(); })
 		.then(function (data) {
 			if (data.error) throw new Error(data.error);
 
-			chargeId = data.id;
+			trxId = data.data.trx_id;
+			qrisAmount = data.data.amount;
 			qrisLoading.classList.add('hidden');
 
-			// Display QR code
-			if (data.payment && data.payment.qr_code) {
-				var qr = data.payment.qr_code;
-				if (qr.startsWith('data:') || qr.startsWith('http')) {
-					qrisImg.src = qr;
-					qrisImg.classList.remove('hidden');
-				} else {
-					// It's a raw QR string, generate QR on client
-					generateQR(qr);
-				}
-			} else if (data.qr_code) {
-				// Alternative: top-level qr_code field
-				var qr2 = data.qr_code;
-				if (qr2.startsWith('data:') || qr2.startsWith('http')) {
-					qrisImg.src = qr2;
-					qrisImg.classList.remove('hidden');
-				} else {
-					generateQR(qr2);
-				}
+			var qrisUrl = data.data.qris_url;
+			if (qrisUrl) {
+				qrisImg.src = qrisUrl;
+				qrisImg.classList.remove('hidden');
 			} else {
-				// Fallback: generate QR from charge ID
-				generateQR(chargeId);
+				generateQR(data.data.qris_code);
 			}
 
 			qrisHint.classList.remove('hidden');
 			showStatus('Menunggu pembayaran...', 'pending');
 
-			// Start polling
 			startPolling();
 		})
 		.catch(function (err) {
@@ -367,27 +343,22 @@ const AMOUNT = '49000';
 	function startPolling() {
 		clearInterval(pollInterval);
 		pollInterval = setInterval(function () {
-			if (!chargeId) return;
+			if (!trxId) return;
 
-			fetch('/api/check-status?id=' + encodeURIComponent(chargeId))
+			fetch('/api/check-status?amount=' + qrisAmount + '&trx_id=' + encodeURIComponent(trxId))
 			.then(function (res) { return res.json(); })
 			.then(function (data) {
 				if (data.error) return;
 
-				var status = (data.status || '').toUpperCase();
-
-				if (status === 'SUCCESS' || status === 'SETTLED') {
+				if (data.paid) {
 					clearInterval(pollInterval);
 					clearInterval(timerInterval);
 					showStatus('Pembayaran berhasil!', 'success');
 					setTimeout(redirectToWhatsApp, 1500);
-				} else if (status === 'FAILED' || status === 'EXPIRED') {
-					clearInterval(pollInterval);
-					showStatus('Pembayaran gagal. Silakan coba lagi.', 'error');
 				}
 			})
 			.catch(function () {});
-		}, 3000);
+		}, 8000);
 	}
 
 	function redirectToWhatsApp() {

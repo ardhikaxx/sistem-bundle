@@ -199,7 +199,10 @@ const AMOUNT = '49000';
 	function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
 
 	document.getElementById('btn-beli').addEventListener('click', function() { openModal('modal-form'); });
-	document.getElementById('btn-konfirmasi').addEventListener('click', function() { redirectToWhatsApp(); });
+	document.getElementById('btn-konfirmasi').addEventListener('click', function() {
+		document.getElementById('form-beli').dataset.mode = 'confirm';
+		openModal('modal-form');
+	});
 	document.getElementById('close-form').addEventListener('click', function() { closeModal('modal-form'); });
 	document.getElementById('close-qris').addEventListener('click', function() { clearInterval(timerInterval); closeModal('modal-qris'); });
 
@@ -217,6 +220,11 @@ const AMOUNT = '49000';
 		else if (!waNorm.startsWith('62')) { document.getElementById('input-wa').focus(); return; }
 		buyerData = { nama: nama, wa: waNorm };
 		closeModal('modal-form');
+		if (document.getElementById('form-beli').dataset.mode === 'confirm') {
+			document.getElementById('form-beli').dataset.mode = '';
+			redirectToWhatsApp();
+			return;
+		}
 		document.getElementById('qris-loading').classList.remove('hidden');
 		document.getElementById('qris-canvas').classList.add('hidden');
 		openModal('modal-qris');

@@ -151,10 +151,10 @@ const AMOUNT = '49000';
 
 <script is:inline>
 (function () {
-	var config = document.getElementById('payment-config');
-	var QRIS_PAYLOAD = config.dataset.payload;
-	var AMOUNT = config.dataset.amount;
-	var WHATSAPP_NUMBER = config.dataset.wa;
+	var config = JSON.parse(document.getElementById('payment-config').textContent);
+	var QRIS_PAYLOAD = config.payload;
+	var AMOUNT = config.amount;
+	var WHATSAPP_NUMBER = config.wa;
 
 	// --- CRC-16 CCITT (ISO/IEC 13239) ---
 	function crc16(str) {

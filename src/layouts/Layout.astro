@@ -7,8 +7,11 @@ interface Props {
 	description?: string;
 }
 
-const { title = 'Bundle 5 Sistem Web Laravel 13', description = 'Lima sistem web siap pakai berbasis Laravel 13 — SIAKAD, CRM, CMS, WMS, dan ERP dalam satu paket.' } =
+const { title = 'Bundle 5 Sistem Web Laravel 13 — Rp49.000', description = 'Lima sistem web siap pakai berbasis Laravel 13 — SIAKAD, CRM, CMS, WMS, dan ERP dalam satu paket. Harga spesial Rp49.000 (harga normal Rp250.000).' } =
 	Astro.props;
+
+const siteUrl = 'https://sistem-bundle.vercel.app';
+const ogImage = siteUrl + '/og-image.png';
 ---
 
 <!DOCTYPE html>
@@ -17,9 +20,37 @@ const { title = 'Bundle 5 Sistem Web Laravel 13', description = 'Lima sistem web
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
+
+		<!-- SEO -->
+		<title>{title}</title>
 		<meta name="description" content={description} />
 		<meta name="author" content={author.name} />
-		<title>{title}</title>
+		<meta name="keywords" content="bundle web, laravel 13, siakad, crm, cms, wms, erp, template web murah, sistem informasi, website siap pakai" />
+		<meta name="robots" content="index, follow" />
+		<link rel="canonical" href={siteUrl} />
+
+		<!-- Open Graph / Facebook -->
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={siteUrl} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={ogImage} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:locale" content="id_ID" />
+		<meta property="og:site_name" content="Bundle 5 Sistem Laravel 13" />
+
+		<!-- Twitter -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:url" content={siteUrl} />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={ogImage} />
+		<meta name="twitter:creator" content="@ardhikaxx" />
+
+		<!-- Favicon -->
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
 		<script is:inline src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 	</head>
 	<body class="bg-white text-neutral-900 overflow-x-hidden">

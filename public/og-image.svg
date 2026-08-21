@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#171717"/>
+  <rect x="40" y="40" width="1120" height="550" fill="#262626" rx="20"/>
+  <text x="600" y="180" font-family="Arial, sans-serif" font-size="60" font-weight="bold" fill="white" text-anchor="middle">Bundle 5 Sistem</text>
+  <text x="600" y="250" font-family="Arial, sans-serif" font-size="36" fill="#a3a3a3" text-anchor="middle">Laravel 13 Siap Pakai</text>
+  <text x="600" y="340" font-family="Arial, sans-serif" font-size="28" fill="#737373" text-anchor="middle">SIAKAD · CRM · CMS · WMS · ERP</text>
+  <rect x="440" y="380" width="320" height="70" fill="#171717" rx="10"/>
+  <text x="600" y="425" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="white" text-anchor="middle">Rp49.000</text>
+  <text x="600" y="470" font-family="Arial, sans-serif" font-size="18" fill="#525252" text-anchor="middle">Harga Normal Rp250.000</text>
+  <text x="600" y="530" font-family="Arial, sans-serif" font-size="20" fill="#a3a3a3" text-anchor="middle">sistem-bundle.vercel.app</text>
+</svg>
